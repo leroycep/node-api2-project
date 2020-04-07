@@ -70,7 +70,7 @@ router.get("/:id/comments", (req, res) => {
     });
 });
 
-router.post("/:id/comments", async (req, res) => {
+router.post("/:id/comments", (req, res) => {
   const postExists = db
     .findById(req.params.id)
     .then((posts) => posts.length !== 0)
@@ -107,6 +107,46 @@ router.post("/:id/comments", async (req, res) => {
       res.status(500).json({
         error: "There was an error while saving the comment to the database",
       });
+    });
+});
+
+router.put("/:id", (req, res) => {
+  const post = db
+    .findById(req.params.id)
+    .then((posts) => posts[0])
+    .catch((err) => {
+      console.log(err);
+      return undefined;
+    });
+  if (post === undefined) {
+    res
+      .status(404)
+      .json({ message: "The post with the specified ID does not exist." });
+    return;
+  }
+
+  const updatedPost = req.body;
+  if (updatedPost.title === undefined || updatedPost.contents === undefined) {
+    res.status(400).json({
+      errorMessage: "Please provide title and contents for the post.",
+    });
+    return;
+  }
+  db.update(req.params.id, updatedPost)
+    .then((_num_updated) => {
+      db.findById(req.params.id)
+        .then((post) => {
+          res.status(200).json(post[0]);
+        })
+        .catch(() => {
+          res.status(500).json({ error: "Couldn't find updated post in database" });
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+      res
+        .status(500)
+        .json({ error: "The post information could not be modified." });
     });
 });
 
