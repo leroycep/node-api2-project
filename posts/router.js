@@ -70,4 +70,44 @@ router.get("/:id/comments", (req, res) => {
     });
 });
 
+router.post("/:id/comments", async (req, res) => {
+  const postExists = db
+    .findById(req.params.id)
+    .then((posts) => posts.length !== 0)
+    .catch((err) => {
+      console.log(err);
+      return false;
+    });
+  if (!postExists) {
+    res
+      .status(404)
+      .json({ message: "The post with the specified ID does not exist." });
+  }
+
+  const newComment = req.body;
+  newComment.post_id = req.params.id;
+  if (newComment.text === undefined) {
+    res
+      .status(400)
+      .json({ errorMessage: "Please provide text for the comment." });
+    return;
+  }
+  db.insertComment(newComment)
+    .then(({ id }) => {
+      db.findCommentById(id)
+        .then((comment) => {
+          res.status(201).json(comment[0]);
+        })
+        .catch(() => {
+          res.status(500).json({ error: "Couldn't find new post in database" });
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({
+        error: "There was an error while saving the comment to the database",
+      });
+    });
+});
+
 module.exports = router;
