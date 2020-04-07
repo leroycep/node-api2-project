@@ -70,8 +70,8 @@ router.get("/:id/comments", (req, res) => {
     });
 });
 
-router.post("/:id/comments", (req, res) => {
-  const postExists = db
+router.post("/:id/comments", async (req, res) => {
+  const postExists = await db
     .findById(req.params.id)
     .then((posts) => posts.length !== 0)
     .catch((err) => {
@@ -110,8 +110,8 @@ router.post("/:id/comments", (req, res) => {
     });
 });
 
-router.put("/:id", (req, res) => {
-  const post = db
+router.put("/:id", async (req, res) => {
+  const post = await db
     .findById(req.params.id)
     .then((posts) => posts[0])
     .catch((err) => {
@@ -139,7 +139,9 @@ router.put("/:id", (req, res) => {
           res.status(200).json(post[0]);
         })
         .catch(() => {
-          res.status(500).json({ error: "Couldn't find updated post in database" });
+          res
+            .status(500)
+            .json({ error: "Couldn't find updated post in database" });
         });
     })
     .catch((err) => {
@@ -147,6 +149,33 @@ router.put("/:id", (req, res) => {
       res
         .status(500)
         .json({ error: "The post information could not be modified." });
+    });
+});
+
+router.delete("/:id", async (req, res) => {
+  const post = await db
+    .findById(req.params.id)
+    .then((posts) => posts[0])
+    .catch((err) => {
+      console.log(err);
+      return undefined;
+    });
+  if (post === undefined) {
+    res
+      .status(404)
+      .json({ message: "The post with the specified ID does not exist." });
+    return;
+  }
+
+  console.log(post);
+
+  db.remove(req.params.id)
+    .then((_num_deleted) => {
+      res.status(200).json(post);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: "The post could not be removed" });
     });
 });
 
